@@ -13,7 +13,8 @@ export class GeminiService {
     mode: AppMode,
     isThinking: boolean,
     currentCanvasContent: string | null,
-    onChunk?: (text: string) => void
+    onChunk?: (text: string) => void,
+    signal?: AbortSignal
   ) {
     const ai = this.getAI();
     const config: any = {
@@ -80,6 +81,9 @@ export class GeminiService {
         let groundingUrls: { title: string; uri: string }[] = [];
 
         for await (const chunk of response) {
+          if (signal?.aborted) {
+            break;
+          }
           const chunkText = chunk.text || "";
           fullText += chunkText;
           if (onChunk) onChunk(chunkText);
@@ -98,6 +102,7 @@ export class GeminiService {
         
         return { text: fullText, groundingUrls };
     } catch (error) {
+      // AbortErrorの場合はエラーとして扱わない、または呼び出し元で処理する
       console.error("Gemini Text Generation Error:", error);
       throw error;
     }
