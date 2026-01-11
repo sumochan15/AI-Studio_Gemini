@@ -6,6 +6,7 @@ import Canvas from './components/Canvas';
 import KeySelector from './components/KeySelector';
 import MessageActions from './components/MessageActions';
 import AttachmentMenu from './components/AttachmentMenu';
+import DeepResearchView from './components/DeepResearchView';
 import { geminiService } from './services/geminiService';
 
 const App: React.FC = () => {
@@ -143,7 +144,7 @@ const App: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (readEvent) => {
         const result = readEvent.target?.result as string;
@@ -179,6 +180,61 @@ const App: React.FC = () => {
         mode: AppMode.CHAT,
         isCanvasOpen: false
     }));
+  };
+
+  const handleStartDeepResearch = async (messageId: string, steps: string[]) => {
+    // Update message state to in_progress with confirmed steps
+    updateMessage(messageId, {
+        researchSteps: steps,
+        researchState: 'in_progress',
+        currentResearchStep: 0
+    });
+
+    setState(prev => ({ ...prev, isGenerating: true }));
+
+    // Find original query
+    const messageIndex = state.messages.findIndex(m => m.id === messageId);
+    const userMessage = state.messages[messageIndex - 1];
+    const originalQuery = userMessage?.content || steps.join(' ');
+
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    try {
+        let streamedContent = "";
+        
+        // Use the new agentic method
+        const result = await geminiService.executeDeepResearch(
+            originalQuery,
+            steps,
+            (stepIndex) => {
+                // Update active step in UI
+                updateMessage(messageId, { currentResearchStep: stepIndex });
+            },
+            (chunk) => {
+                // Update content (Report)
+                if (signal.aborted) return;
+                streamedContent += chunk;
+                updateMessage(messageId, { content: streamedContent });
+            },
+            signal
+        );
+
+        if (!signal.aborted) {
+            updateMessage(messageId, { 
+                researchState: 'completed', 
+                groundingUrls: result.groundingUrls 
+            });
+        }
+    } catch (error: any) {
+        if (error.name !== 'AbortError') {
+             console.error(error);
+             updateMessage(messageId, { content: "エラーが発生しました: " + (error.message || "Unknown error") });
+        }
+    } finally {
+        abortControllerRef.current = null;
+        setState(prev => ({ ...prev, isGenerating: false }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -256,8 +312,34 @@ const App: React.FC = () => {
                 videoUri: videoUri
             });
         }
+      } else if (state.mode === AppMode.DEEP_RESEARCH) {
+        // Deep Research Flow
+        
+        // 1. Create a placeholder message for Research Status
+        const assistantMsgId = addMessage({
+            role: 'assistant',
+            content: "",
+            type: 'deep_research',
+            researchState: 'planning',
+            researchSteps: []
+        });
+
+        // 2. Step 1: Generate Plan
+        const steps = await geminiService.createResearchPlan(currentInput);
+        
+        if (signal.aborted) return;
+
+        updateMessage(assistantMsgId, {
+            researchSteps: steps,
+            researchState: 'proposed' // Pause here for user confirmation
+        });
+
+        // We stop generation here to wait for user interaction
+        setState(prev => ({ ...prev, isGenerating: false }));
+        abortControllerRef.current = null;
+
       } else {
-        // Chat, Deep Research, Canvas
+        // Normal Chat, Canvas
         const assistantMsgId = addMessage({
           role: 'assistant',
           content: "", 
@@ -308,8 +390,11 @@ const App: React.FC = () => {
           }
       }
     } finally {
-      abortControllerRef.current = null;
-      setState(prev => ({ ...prev, isGenerating: false }));
+      // For deep research, we might have already stopped earlier, but this is safe
+      if (state.mode !== AppMode.DEEP_RESEARCH) {
+        abortControllerRef.current = null;
+        setState(prev => ({ ...prev, isGenerating: false }));
+      }
     }
   };
 
@@ -716,7 +801,7 @@ const App: React.FC = () => {
                                 <div key={message.id} className={`flex gap-4 max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : ''}`}>
                                     {message.role === 'assistant' && (
                                         <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-1">
-                                            {message.content === "" && state.isGenerating ? (
+                                            {message.content === "" && state.isGenerating && message.type !== 'deep_research' ? (
                                                 <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" alt="Thinking" className="w-full h-full animate-sparkle" />
                                             ) : (
                                                 <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" alt="Gemini" className="w-full h-full" />
@@ -743,7 +828,7 @@ const App: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {message.content === "" && state.isGenerating && message.role === 'assistant' ? (
+                                        {message.content === "" && state.isGenerating && message.role === 'assistant' && message.type !== 'deep_research' ? (
                                             <div className="flex items-center gap-2 py-2 px-1">
                                                 <div className="text-sm text-[#C4C7C5] animate-pulse">思考中...</div>
                                             </div>
@@ -753,6 +838,16 @@ const App: React.FC = () => {
                                                     ? 'bg-[#2D2E31] text-[#E3E3E3] rounded-br-sm' 
                                                     : 'text-[#E3E3E3]'
                                             }`}>
+                                                {/* Deep Research Plan View */}
+                                                {message.type === 'deep_research' && message.researchSteps && (
+                                                    <DeepResearchView 
+                                                        steps={message.researchSteps} 
+                                                        state={message.researchState || 'planning'}
+                                                        currentStepIndex={message.currentResearchStep}
+                                                        onStartResearch={(modifiedSteps) => handleStartDeepResearch(message.id, modifiedSteps)}
+                                                    />
+                                                )}
+
                                                 {/* Content Type Rendering */}
                                                 {message.type === 'image' && message.images ? (
                                                     <div className="grid gap-2">
@@ -767,7 +862,7 @@ const App: React.FC = () => {
                                                         <video controls src={message.videoUri} className="rounded-xl w-full max-w-md border border-[#444746]" />
                                                     </div>
                                                 ) : (
-                                                    <div className="markdown-body" dangerouslySetInnerHTML={renderMarkdown(message.content)}></div>
+                                                    message.content && <div className="markdown-body" dangerouslySetInnerHTML={renderMarkdown(message.content)}></div>
                                                 )}
 
                                                 {message.groundingUrls && message.groundingUrls.length > 0 && (

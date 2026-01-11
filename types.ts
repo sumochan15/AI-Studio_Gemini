@@ -27,12 +27,16 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  type: 'text' | 'image' | 'video' | 'error';
+  type: 'text' | 'image' | 'video' | 'error' | 'deep_research'; // deep_research type added
   images?: string[];
   videoUri?: string;
-  attachments?: Attachment[]; // Added for generic file attachments
+  attachments?: Attachment[];
   groundingUrls?: { title: string; uri: string }[];
   timestamp: number;
+  // Deep Research Specific
+  researchSteps?: string[];
+  researchState?: 'planning' | 'proposed' | 'in_progress' | 'completed';
+  currentResearchStep?: number;
 }
 
 export interface ChatSession {
