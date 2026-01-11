@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJ Gemini Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #131314;
+            --bg-surface: #1E1F20;
+            --bg-surface-variant: #2D2E31;
+            --text-primary: #E3E3E3;
+            --text-secondary: #C4C7C5;
+            --accent-blue: #A8C7FA;
+            --accent-blue-dim: #0B57D0;
+        }
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Google Sans', 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px; /* Base font size reduction */
+        }
+        .font-google {
+            font-family: 'Google Sans', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #444746;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #5E5E5E;
+        }
+        
+        /* Markdown Styles Tweaks for Compactness */
+        .markdown-body { font-size: 14px; line-height: 1.6; }
+        .markdown-body p { margin-bottom: 0.8em; }
+        .markdown-body h1 { font-size: 1.5em; font-weight: 500; margin-top: 1em; margin-bottom: 0.5em; color: #E3E3E3; }
+        .markdown-body h2 { font-size: 1.3em; font-weight: 500; margin-top: 0.8em; margin-bottom: 0.4em; color: #E3E3E3; }
+        .markdown-body h3 { font-size: 1.1em; font-weight: 600; margin-top: 0.8em; margin-bottom: 0.4em; color: #E3E3E3; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.8em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.8em; }
+        .markdown-body pre { background: #2D2E31; padding: 0.8rem; border-radius: 8px; overflow-x: auto; margin-bottom: 0.8em; border: 1px solid #444746; }
+        .markdown-body code { font-family: 'Roboto Mono', monospace; background: #2D2E31; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
+        .markdown-body pre code { background: transparent; padding: 0; font-size: 0.85em; }
+        .markdown-body blockquote { border-left: 3px solid #444746; padding-left: 1em; color: #C4C7C5; margin-bottom: 0.8em; }
+        .markdown-body a { color: #A8C7FA; text-decoration: none; }
+        .markdown-body a:hover { text-decoration: underline; }
+        .markdown-body strong { font-weight: 600; color: #F0F4F9; }
+
+        @keyframes sparkle-spin {
+            0% { transform: rotate(0deg) scale(0.8); opacity: 0.8; }
+            50% { transform: rotate(180deg) scale(1.1); opacity: 1; }
+            100% { transform: rotate(360deg) scale(0.8); opacity: 0.8; }
+        }
+        .animate-sparkle {
+            animation: sparkle-spin 3s linear infinite;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.35.0"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>

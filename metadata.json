@@ -1,0 +1,8 @@
+{
+  "name": "AJ Gemini Studio",
+  "description": "Professional AI interface featuring Deep Research, Canvas workspace, and Gemini 3 Pro integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
